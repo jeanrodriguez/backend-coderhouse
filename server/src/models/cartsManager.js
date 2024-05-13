@@ -1,12 +1,8 @@
 import { v4 as uuidv4 } from "uuid";
 import { writeFile, readFile } from "fs/promises";
 import fs from "fs";
-import ProductManager from "./productsManager.js";
 import { __dirnameApp } from "../pathUtil.js";
 
-const producManger = new ProductManager(`${__dirnameApp}/data/products.json`);
-
-// import { access, constants } from "node:fs/promises";
 class CartManager {
   constructor(path) {
     this.path = path;
@@ -63,16 +59,14 @@ class CartManager {
   async addProductToCart(cart, productId) {
     try {
       const cartList = await this.getCarts();
-      const existProdInCart = cart.products.find(
-        (prod) => prod.id === productId
-      );
-      if (!existProdInCart) {
+      const productFound = cart.products.find((prod) => prod.id === productId);
+      if (!productFound) {
         const productToCart = {
           id: productId,
           quantity: 1,
         };
         cart.products.push(productToCart);
-      } else existProdInCart.quantity += 1;
+      } else productFound.quantity += 1;
 
       const updatedCarts = cartList.map((cartItem) => {
         if (cartItem.id === cart.id) return cart;
