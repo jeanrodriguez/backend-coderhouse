@@ -7,11 +7,11 @@ export const productSchema = Joi.object({
   code: Joi.string().required(),
   stock: Joi.number().required(),
   category: Joi.string().required(),
+  thumbnails: Joi.optional(),
 });
 
 export const validateProduct = (req, res, next) => {
   // Validate product data
-  console.log("==req.body==", req.body);
   const valildator = productSchema.validate(
     req.body,
     { abortEarly: false } // Return all errors

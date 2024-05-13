@@ -7,14 +7,14 @@ class ProductManager {
     this.path = path;
   }
 
-  async getProducts() {
+  async getProducts(limit) {
     try {
       if (!fs.existsSync(this.path)) {
         return [];
       }
       const productsFromFille = await readFile(this.path, "utf8");
       if (!productsFromFille) return [];
-      // if(limit) return JSON.parse(products (cortar el array en limit))
+      if (limit) return JSON.parse(productsFromFille).slice(0, limit);
       return JSON.parse(productsFromFille);
     } catch (error) {
       console.log("==error==", error);

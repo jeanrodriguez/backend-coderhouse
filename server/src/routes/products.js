@@ -8,13 +8,15 @@ import {
 } from "../utils/httpResponse.js";
 import { upload } from "../middlewares/multer.js";
 import { validateProduct } from "../middlewares/validateProduct.js";
+import { isArrayEmpty } from "../utils/index.js";
 
 const router = Router();
 
 const producManger = new ProductManager(`${__dirnameApp}/data/products.json`);
 
 router.get("/", async (req, res) => {
-  const productList = await producManger.getProducts();
+  const { limit } = req.query;
+  const productList = await producManger.getProducts(limit);
   sendOkResponse(res, productList);
 });
 
@@ -26,20 +28,39 @@ router.get("/:pid", async (req, res) => {
   sendOkResponse(res, product);
 });
 
-router.post("/", async (req, res) => {
-  try {
-    const newProduct = req.body;
-    console.log("==newProduct==", newProduct);
-    const savedData = await producManger.createProduct(newProduct);
-    sendOkResponse(res, savedData);
-  } catch (error) {
-    sendServerErrorResponse(res, error);
-  }
-});
+router.post(
+  "/",
+  upload.array("thumbnails"),
+  validateProduct,
+  async (req, res) => {
+    try {
+      const newProduct = req.body;
 
-router.put("/:pid", async (req, res) => {
+      if (req.files && !isArrayEmpty(req.files)) {
+        newProduct.thumbnails = [];
+        req.files.map((file) => {
+          newProduct.thumbnails.push(file.path);
+        });
+      }
+      const savedData = await producManger.createProduct(newProduct);
+      sendOkResponse(res, savedData);
+    } catch (error) {
+      sendServerErrorResponse(res, error);
+    }
+  }
+);
+
+router.put("/:pid", upload.array("thumbnails"), async (req, res) => {
   try {
     const productToUpdate = req.body;
+
+    if (req.files && !isArrayEmpty(req.files)) {
+      productToUpdate.thumbnails = [];
+      req.files.map((file) => {
+        productToUpdate.thumbnails.push(file.path);
+      });
+    }
+
     const savedData = await producManger.updateProduct(
       req.params.pid,
       productToUpdate
