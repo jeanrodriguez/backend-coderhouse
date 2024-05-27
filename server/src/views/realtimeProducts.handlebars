@@ -1,0 +1,205 @@
+<h2>Realtime Products</h2>
+
+<input type="button" class="btn btn-primary" id="btnCreateForm" value="Create product">
+
+<table id="realTimetable" class="table table-hover">
+    <thead>
+        <tr>
+            <th>Status</th>
+            <th>Title</th>
+            <th>Description</th>
+            <th>Code</th>
+            <th>Price</th>
+            <th>Stock</th>
+            <th>Category</th>
+            <th>Actions</th>
+        </tr>
+    </thead>
+    <tbody id="realTimeTableBody">
+        {{#each products}}
+        <tr id="product-{{id}}" class="mb-3 mt-3">
+            <td>
+                {{#if status}}
+                Active
+                {{else}}
+                Inactive
+                {{/if}}
+            </td>
+            <td>{{title}}</td>
+            <td>{{description}}</td>
+            <td>{{code}}</td>
+            <td>{{price}}</td>
+            <td>{{stock}}</td>
+            <td>{{category}}</td>
+            <td>
+                <div>
+                    <button type="button" class="btn btn-outline-danger" id="btn-delete-product"
+                        onclick="deleteProduct('{{id}}')">
+                        Delete
+                    </button>
+                </div>
+            </td>
+        </tr>
+        {{/each}}
+    </tbody>
+</table>
+
+<script type="text/javascript">
+    const socket = io();
+
+    async function deleteProduct(id) {
+        console.log("Deleting product with ID:", id);
+        try {
+            const response = await fetch(`http://localhost:8080/api/products/${id}`, {
+                method: 'DELETE',
+                headers: {
+                    'Accept': 'application/json',
+                    'Content-Type': 'application/json'
+                }
+            });
+        } catch (error) {
+            console.log(error)
+        }
+    }
+
+    const showCreate = () => {
+        Swal.fire({
+            title: 'Create product',
+            html: `
+    <input type="text" id="productTitle" class="swal2-input" placeholder="Title">
+    <input type="text" id="productDescription" class="swal2-input" placeholder="Description">
+    <input type="text" id="productCode" class="swal2-input" placeholder="Code">
+    <input type="text" id="productCategory" class="swal2-input" placeholder="Category">
+    <input type="number" id="productPrice" class="swal2-input" placeholder="Price">
+    <input type="number" id="productStock" class="swal2-input" placeholder="Stock">
+  `,
+            confirmButtonText: 'Create',
+            focusConfirm: false,
+            allowOutsideClick: false,
+            showCloseButton: true,
+            showCancelButton: true,
+
+            didOpen: () => {
+                const popup = Swal.getPopup();
+
+                titleInput = popup.querySelector('#productTitle')
+                descriptionInput = popup.querySelector('#productDescription')
+                priceInput = popup.querySelector('#productPrice')
+                codeInput = popup.querySelector('#productCode')
+                stockInput = popup.querySelector('#productStock')
+                categoryInput = popup.querySelector('#productCategory')
+
+                titleInput.onkeyup = (event) => event.key === 'Enter' && Swal.clickConfirm()
+                descriptionInput.onkeyup = (event) => event.key === 'Enter' && Swal.clickConfirm()
+            },
+            preConfirm: async () => {
+                const title = titleInput.value
+                const description = descriptionInput.value
+                const price = priceInput.value
+                const code = codeInput.value
+                const stock = stockInput.value
+                const category = categoryInput.value
+
+                if (!title) {
+                    return Swal.showValidationMessage(`Please enter title`)
+                }
+                if (!description) {
+                    return Swal.showValidationMessage(`Please enter description`)
+                }
+                 if (!code) {
+                    return Swal.showValidationMessage(`Please enter code`)
+                }
+                 if (!category) {
+                    return Swal.showValidationMessage(`Please enter category`)
+                }
+                if (!price) {
+                    return Swal.showValidationMessage(`Please enter price`)
+                }             
+                if (!stock) {
+                    return Swal.showValidationMessage(`Please enter stock`)
+                }
+                try {
+                    const body = { title, description, price, code, stock, category };
+                    const response = await fetch('http://localhost:8080/api/products', {
+                        method: 'POST',
+                        headers: {
+                            'Accept': 'application/json',
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify(body)
+                    });
+                      Swal.fire({
+                        title: "Product created!",
+                        icon: "success"
+                    });
+                    return { ...body }
+                  
+                } catch(error) {
+                    Swal.fire({
+                        icon: "error",
+                        title: "Oops...",
+                        text: "Something went wrong!",
+                    });
+                
+                 }
+
+            },
+        })
+    };
+
+    document.getElementById('btnCreateForm').onclick = showCreate;
+
+    socket.on('productDeleteById', (id) => {
+        const productRow = document.getElementById(`product-${id}`);
+
+        if (productRow) {
+            productRow.remove();
+        }
+    })
+
+    // Function to append a new product row to the table
+    function appendProductRow(product) {
+        const table = document.getElementById('realTimeTableBody');
+        const newRow = document.createElement('tr');
+        newRow.id = `product-${product.id}`;
+
+        // Append product properties as table cells
+        ['status', 'title', 'description', 'code', 'category', 'price', 'stock', ].forEach(prop => {
+            const cell = document.createElement('td');
+            if(prop === 'status') {
+                product[prop] ? cell.textContent = 'Active' : cell.textContent = 'Inactive';
+            }
+            else {
+                cell.textContent = product[prop];
+            }
+            newRow.appendChild(cell);
+        });
+
+        // Append delete button cell
+        const actionCell = document.createElement('td');
+        const div = document.createElement('div');
+        div.className = '';
+        const deleteButton = document.createElement('button');
+        deleteButton.type = 'button';
+        deleteButton.className = 'btn btn-outline-danger';
+        deleteButton.textContent = 'Delete';
+        deleteButton.onclick = () => deleteProduct(product.id);
+        div.appendChild(deleteButton);
+        actionCell.appendChild(div);
+        newRow.appendChild(actionCell);
+
+        newRow.classList.add('table-success');
+
+        const referenceNode = table.firstChild;
+
+        table.insertBefore(newRow, referenceNode);
+
+         // Remove the highlight after 5 seconds
+        setTimeout(() => {
+            newRow.classList.remove('table-success');
+        }, 5000);
+    }
+
+    socket.on('productCreated', appendProductRow);
+
+</script>

@@ -9,6 +9,7 @@ import {
 import { upload } from "../middlewares/multer.js";
 import { validateProduct } from "../middlewares/validateProduct.js";
 import { isArrayEmpty } from "../utils/index.js";
+import { socketServer } from "../app.js";
 
 const router = Router();
 
@@ -43,6 +44,7 @@ router.post(
         });
       }
       const savedData = await producManger.createProduct(newProduct);
+      socketServer.emit("productCreated", savedData);
       sendOkResponse(res, savedData);
     } catch (error) {
       sendServerErrorResponse(res, error);
@@ -75,6 +77,7 @@ router.delete("/:pid", async (req, res) => {
   try {
     const deletedProduct = await producManger.deleteProduct(req.params.pid);
     if (!deletedProduct) sendNotFoundResponse(res);
+    socketServer.emit("productDeleteById", req.params.pid);
     sendOkResponse(res, deletedProduct);
   } catch (error) {
     sendServerErrorResponse(res, error);

@@ -1,0 +1,33 @@
+<h2>Product list</h2>
+
+<table id="productList" class="table table-hover">
+    <thead>
+        <tr>
+            <th>Status</th>
+            <th>Title</th>
+            <th>Description</th>
+            <th>Code</th>
+            <th>Price</th>
+            <th>Category</th>
+        </tr>
+    </thead>
+    <tbody>
+        {{#each products}}
+        <tr>
+            <td>
+                {{#if status}}
+                Active
+                {{else}}
+                Inactive
+                {{/if}}
+            </td>
+            <td>{{title}}</td>
+            <td>{{description}}</td>
+            <td>{{code}}</td>
+            <td>{{price}}</td>
+            <td>{{category}}</td>
+
+        </tr>
+        {{/each}}
+    </tbody>
+</table>
